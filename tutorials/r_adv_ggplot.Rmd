@@ -12,4 +12,125 @@ output:
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, error = FALSE)
 ```
 
-**This tutorial is not ready yet. Please come back later.**
+This tutorial will cover some more advanced data visualization techniques using the `ggplot2` package in R. We will explore how to create more complex plots with aesthetic customization, scaling, layering and facets.
+
+```{r}
+library(tidyverse)
+data(iris)
+```
+
+# Customize the appearance
+
+You can customize the appearance of your plots in `ggplot2` using colors, shapes, sizes, labs and themes. The default theme is `theme_gray()`, but you can change it to other themes like `theme_bw()`, `theme_minimal()`, or `theme_light()`.
+
+```{r}
+ggplot(iris, aes(x = Petal.Length, y = Petal.Width)) +
+  geom_point(color = "maroon", shape = "diamond", size = 2) + 
+  xlab("Petal length") + # Add axis labels
+  ylab("Petal width") +
+  theme_light()
+```
+
+Instead of manually specifying the theme of each plot, you can also set the theme globally using the `theme_set()` function. This will apply the specified theme to all subsequent plots.
+
+```{r}
+theme_set(theme_light())
+```
+
+Aesthetic characteristics of geoms can also vary based on variables. You can add these characteristics – such as color, fill, size, shape – to the aes() function.
+
+```{r}
+ggplot(iris, aes(x = Petal.Length, y = Petal.Width, shape = Species, color = Species)) +
+  geom_point(size = 2, alpha = 0.9, position = "jitter") + 
+  xlab("Petal length") +
+  ylab("Petal width") +
+  theme_light() +
+  scale_color_brewer(palette = "Oranges") # RColorBrewer offers a variety of color palettes
+```
+
+You can also have full control over the aesthetic characteristics of a plot. For any aesthetic you specify, you can override the default behavior by adding `scale_...` elements, which allow to specify legend titles, color palettes, labels, etc.
+
+```{r}
+ggplot(iris, aes(x = Petal.Length, y = Petal.Width, shape = Species, color = Species)) +
+  geom_point(size = 2, alpha = 0.7, position = "jitter") + 
+  xlab("Petal length") +
+  ylab("Petal width") +
+  theme_light() +
+  # Set the color palette manually
+  scale_color_manual(values = c("maroon", "darkgreen", "darkorange2")) +
+  # Set the shapes manually
+  scale_shape_manual(values = c("diamond", "asterisk", "square")) 
+  # Shapes can also be specified by numbers: c(18, 8, 15) will give the same shapes
+```
+
+# Layering
+
+In the following code block, we want to add a line plot to the scatterplot that we have made previously. However, by simply adding `geom_smooth()` to the existing workflow, we get three different lines.
+
+```{r}
+ggplot(iris, aes(x = Petal.Length, y = Petal.Width, shape = Species, color = Species)) +
+  geom_point(size = 2, alpha = 0.9, position = "jitter") + 
+  geom_smooth() +
+  xlab("Petal length") +
+  ylab("Petal width") +
+  theme_light() +
+  scale_color_brewer(palette = "Oranges")
+```
+
+This happens because the `aes()` specification is placed inside the `ggplot()` function, which globalizes the `aes()` specification to all geoms. To avoid this, we can localize the `aes()` specification to each geom function to have more control on their individual behavior.
+
+```{r}
+ggplot(iris) +
+  geom_point(
+    aes(x = Petal.Length, y = Petal.Width, shape = Species, color = Species), 
+    size = 2, 
+    alpha = 0.9, 
+    position = "jitter") + 
+  geom_smooth(
+    aes(x = Petal.Length, y = Petal.Width), 
+    size = 1,
+    color = "purple3",
+    method = "lm", # Restricts the line to a linear regression
+    se = TRUE) + # Visualizes the confidence interval
+  xlab("Petal length") +
+  ylab("Petal width") +
+  theme_light() +
+  scale_color_brewer(palette = "Oranges")
+```
+
+Sometimes layering can look quite messy, and this is where `facet_wrap()` comes in handy. It allows you to create fragment one plot based on a variable, which can help to visualize the data better.
+
+```{r}
+ggplot(iris) +
+  geom_density(
+    aes(x = Petal.Width, fill = Species),
+    alpha = 0.7) +
+  geom_density(
+    aes(x = Sepal.Width, fill = Species),
+    alpha = 0.7) +
+  scale_fill_viridis_d(option = "H") +
+  xlab("Petal width and Sepal width") +
+  ylab("") +
+  facet_wrap(~ Species) +
+  theme_light() +
+  theme(legend.position = "none")
+```
+
+# Saving plots
+
+The `ggsave` allows you to save plots generated with R code. You can specify an existing ggplot object as the first argument, but by default `ggsave()` saves the last plot displayed in your Plots panel. You always need to specify the file path of the saved plot, including the preferred file format (e.g. .png, .jpg, .pdf). Plot size can be adjusted with the scale argument or by specifying the height and width in your preferred units (inches are the default unit).
+
+```{r}
+# Save last plot
+ggsave("figures/plot1.png", scale = 1.5)
+
+p <- ggplot(iris, aes(x = Species, y = Petal.Length, fill = Species)) + 
+  geom_boxplot(width = 0.4) +
+  scale_fill_brewer(palette = "PuOr") +
+  xlab("") +
+  ylab("Petal length") +
+  theme(legend.position = "none")
+
+# Save a plot saved to the Environment
+ggsave("figures/plot2.png", p, height = 10, width = 15, units = "cm")
+```
