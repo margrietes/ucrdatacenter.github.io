@@ -12,125 +12,515 @@ output:
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, error = FALSE)
 ```
 
-This tutorial will cover some more advanced data visualization techniques using the `ggplot2` package in R. We will explore how to create more complex plots with aesthetic customization, scaling, layering and facets.
+# Introduction
+
+This tutorial will cover some more advanced data visualization techniques using the `ggplot2` package in R. We will explore the following topics:
+
+-   Customizing the appearance of plots with themes, geoms and scales
+-   Plot layering and faceting
+-   Advanced geoms like heatmaps, ribbons, and error bars
+-   Coordinate scales and zooming
+-   Saving ggplots
+
+We will mostly use `iris`, a simple dataset from the `datasets` package, and `diamonds`, a slightly more complex `ggplot2` dataset.
 
 ```{r}
 library(tidyverse)
 data(iris)
+data(diamonds)
 ```
 
-# Customize the appearance
+# Customizing the appearance of plots
 
-You can customize the appearance of your plots in `ggplot2` using colors, shapes, sizes, labs and themes. The default theme is `theme_gray()`, but you can change it to other themes like `theme_bw()`, `theme_minimal()`, or `theme_light()`.
+## Themes
 
-```{r}
-ggplot(iris, aes(x = Petal.Length, y = Petal.Width)) +
-  geom_point(color = "maroon", shape = "diamond", size = 2) + 
-  xlab("Petal length") + # Add axis labels
-  ylab("Petal width") +
-  theme_light()
-```
+The appearance of plots in `ggplot2` can be customized using colors, shapes, sizes, labs and themes. The default theme is `theme_gray()`, but it can be changed to other themes like `theme_bw()`, `theme_minimal()` or `theme_void()`.
 
-Instead of manually specifying the theme of each plot, you can also set the theme globally using the `theme_set()` function. This will apply the specified theme to all subsequent plots.
+Before starting with plotting, we will set our theme to `theme_light()`, which has a white background and gray grid lines. This step ensures that all subsequent plots will apply the same theme for aesthetic consistency.
 
 ```{r}
 theme_set(theme_light())
 ```
 
-Aesthetic characteristics of geoms can also vary based on variables. You can add these characteristics – such as color, fill, size, shape – to the aes() function.
+## Colors, shapes, sizes
+
+In `ggplot`, there is a wide variety of specifications that can be assigned to geoms. Some are relatively universal and almost always necessary to specify, such as the x (and y) aesthetics, while others are specific to the geom used.
+
+For example, `color` specifies the outline color of the geom, `fill` the fill color (applicable to polygons or bars), `linetype` the type of line for line-based geoms (eg. solid, dashed, dotted), and `alpha` the transparency.
+
+Below is a basic plot of the `iris` dataset, which shows the relationship between `Petal.Length` and `Petal.Width` with basic aesthetic customization of color, shape, size and labs.
 
 ```{r}
-ggplot(iris, aes(x = Petal.Length, y = Petal.Width, shape = Species, color = Species)) +
-  geom_point(size = 2, alpha = 0.9, position = "jitter") + 
-  xlab("Petal length") +
-  ylab("Petal width") +
-  theme_light() +
-  scale_color_brewer(palette = "Oranges") # RColorBrewer offers a variety of color palettes
+ggplot(iris, aes(x = Petal.Length, y = Petal.Width)) +
+  geom_point(color = "maroon", shape = "diamond", size = 2) + 
+  labs(x = "Petal Length", y = "Petal Width") # Add axis labels for readability
 ```
 
-You can also have full control over the aesthetic characteristics of a plot. For any aesthetic you specify, you can override the default behavior by adding `scale_...` elements, which allow to specify legend titles, color palettes, labels, etc.
+Aesthetic characteristics, or mappings, can change based on the value of a variable if it is specified in the `aes()` function of a `ggplot`. For example, setting the color to a variable inside `aes()` will ensure that the different values of that variable are assigned their own color (which works best for categorical variables). The `aes()` specification also works locally for each individual geom, allowing for more control over the aesthetics of a specific layer.
+
+If needed, you can have full control over the aesthetic characteristics of a plot. For any aesthetic you specify, you can override the default behavior by adding `scale_...` elements, which allow to specify color palettes, shapes, labels, etc.
+
+In the following example, we map the `Species` variable to the `shape` aesthetic, which means that the shape of a point is determined by its species of iris flower. This allows us to visualize and investigate the differences between species in the scatter plot. Additionally, `position = "jitter"` is used to add some random noise to each point, as some of the points in this data are overlapping. Lastly, we manually specify the different shapes we want our data points to have with `scale_shape_manual()`.
 
 ```{r}
-ggplot(iris, aes(x = Petal.Length, y = Petal.Width, shape = Species, color = Species)) +
-  geom_point(size = 2, alpha = 0.7, position = "jitter") + 
-  xlab("Petal length") +
-  ylab("Petal width") +
-  theme_light() +
-  # Set the color palette manually
-  scale_color_manual(values = c("maroon", "darkgreen", "darkorange2")) +
+ggplot(iris, 
+       aes(x = Petal.Length, y = Petal.Width, shape = Species)) +
+  geom_point(
+    color = "maroon", 
+    size = 3, 
+    alpha = 0.7, 
+    position = "jitter") + 
+  labs(
+    x = "Petal Length", 
+    y = "Petal Width") +
   # Set the shapes manually
-  scale_shape_manual(values = c("diamond", "asterisk", "square")) 
-  # Shapes can also be specified by numbers: c(18, 8, 15) will give the same shapes
+  scale_shape_manual(
+    values = c("diamond", "asterisk", "square")) 
+  # Shape names are associated with numbers too: c(18, 8, 15) will give the same shapes
 ```
 
-# Layering
-
-In the following code block, we want to add a line plot to the scatterplot that we have made previously. However, by simply adding `geom_smooth()` to the existing workflow, we get three different lines.
+However, there can be neater options and different approaches to aesthetic customization. For personal preference, instead of `shape = Species` in the `aes()` function, the following code block uses `color = Species` and a preset color palette.
 
 ```{r}
-ggplot(iris, aes(x = Petal.Length, y = Petal.Width, shape = Species, color = Species)) +
-  geom_point(size = 2, alpha = 0.9, position = "jitter") + 
+ggplot(iris, 
+       aes(x = Petal.Length, y = Petal.Width, color = Species)) +
+  geom_point(
+    size = 1.5, 
+    alpha = 0.9, 
+    position = "jitter", 
+    shape = "square") + 
+  labs(x = "Petal Length", y = "Petal Width") +
+  scale_color_brewer(palette = "Oranges") # RColorBrewer offers a variety of color palettes, a list of which can be found in its documentation
+```
+
+To complete the plot, let's add a title and subtitle. Let's also clean the legend a bit by changing the name of the variable and the labels.
+
+```{r}
+ggplot(iris, 
+       aes(x = Petal.Length, y = Petal.Width, color = Species)) +
+  geom_point(
+    size = 1.5, 
+    alpha = 0.9, 
+    position = "jitter", 
+    shape = "square") + 
+  labs(
+    title = "The measurements of Setosa, Versicolor and Virginica", 
+    subtitle = "How petal length and width vary between different species of the iris flower", 
+    x = "Petal Length", 
+    y = "Petal Width") +
+  scale_color_brewer(
+    palette = "Oranges",
+    name = "Species of Iris",
+    labels = c("Setosa", "Versicolor", "Virginica"))
+```
+
+# Plot Layering
+
+As long as geoms exercise compatible behavior, we can add as many layers as we want to a plot. In this section we will explore some common geom combinations.
+
+It is important to note that geoms are plotted in the order of the ggplot pipeline, so the first geom will be plotted first, and the last one will be plotted on top of all the others.
+
+## Line and rug plots
+
+Let's add a line plot to the scatter plot that was made previously. However, if we simply add a `geom_smooth()` to the existing workflow, we get the following result.
+
+```{r}
+ggplot(iris, 
+       aes(x = Petal.Length, y = Petal.Width, color = Species)) +
+  geom_point(
+    size = 1.5, 
+    alpha = 0.9,
+    position = "jitter",
+    shape = "square") + 
   geom_smooth() +
-  xlab("Petal length") +
-  ylab("Petal width") +
-  theme_light() +
+  labs(x = "Petal Length", y = "Petal Width") +
   scale_color_brewer(palette = "Oranges")
 ```
 
-This happens because the `aes()` specification is placed inside the `ggplot()` function, which globalizes the `aes()` specification to all geoms. To avoid this, we can localize the `aes()` specification to each geom function to have more control on their individual behavior.
+This happens because the `aes()` specification is placed inside the `ggplot()` function, which globalizes the contents of `aes()` to all geoms. To avoid this, we need to localize the `aes()` specification to each geom to have more control on their individual behavior.
 
 ```{r}
 ggplot(iris) +
   geom_point(
-    aes(x = Petal.Length, y = Petal.Width, shape = Species, color = Species), 
-    size = 2, 
+    aes(x = Petal.Length, y = Petal.Width, color = Species), 
+    size = 1.5, 
     alpha = 0.9, 
-    position = "jitter") + 
+    position = "jitter",
+    shape = "square") + 
   geom_smooth(
     aes(x = Petal.Length, y = Petal.Width), 
-    size = 1,
-    color = "purple3",
+    color = "maroon4",
+    size = 1, 
+    linetype = "solid",
     method = "lm", # Restricts the line to a linear regression
     se = TRUE) + # Visualizes the confidence interval
-  xlab("Petal length") +
-  ylab("Petal width") +
-  theme_light() +
+  labs(x = "Petal Length", y = "Petal Width") +
   scale_color_brewer(palette = "Oranges")
 ```
 
-Sometimes layering can look quite messy, and this is where `facet_wrap()` comes in handy. It allows you to create fragment one plot based on a variable, which can help to visualize the data better.
+The `geom_rug()` is often paired with scatter plots to show the distribution of points along the axes. It does so by adding small lines (or "rugs") at the specified perimeter of the plot (bottom and left by default).
 
 ```{r}
 ggplot(iris) +
-  geom_density(
-    aes(x = Petal.Width, fill = Species),
-    alpha = 0.7) +
-  geom_density(
-    aes(x = Sepal.Width, fill = Species),
-    alpha = 0.7) +
-  scale_fill_viridis_d(option = "H") +
-  xlab("Petal width and Sepal width") +
-  ylab("") +
-  facet_wrap(~ Species) +
-  theme_light() +
+  geom_point(
+    aes(x = Petal.Length, y = Petal.Width, color = Species), 
+    size = 1.5, 
+    alpha = 0.9, 
+    position = "jitter",
+    shape = "square") + 
+  geom_smooth(
+    aes(x = Petal.Length, y = Petal.Width), 
+    color = "maroon4",
+    size = 0.8, 
+    linetype = "solid",
+    method = "lm", 
+    se = FALSE) +
+  geom_rug(
+    aes(x = Petal.Length, y = Petal.Width, color = Species),
+    size = 0.5,
+    position = "jitter",    # Match jitter with points
+    sides = "bl",           # Rugs on bottom "b" and left "l"
+    show.legend = FALSE  # This ensures that the legend only shows the square points of geom_point()
+  ) +
+  labs(x = "Petal Length", y = "Petal Width") +
+  scale_color_brewer(palette = "Oranges")
+```
+
+## Boxplots and violin plots
+
+Now we will layer a boxplot with a scatter plot to investigate the distribution of `Sepal.Width` per species. This geom combination can effectively visualize the distribution of a continuous variable across different categories, while also including the single values to get a more transparent picture of the data.
+
+```{r}
+ggplot(iris, aes(x = Species, y = Sepal.Width)) +
+  geom_boxplot(
+    aes(fill = Species), 
+    alpha = 0.7, 
+    width = 0.7) +
+  geom_jitter(
+    aes(color = Species), 
+    size = 1,
+    alpha = 0.5,
+    width = 0.3) +
+  scale_fill_brewer(palette = "Pastel2") +
+  scale_color_brewer(palette = "Dark2") +
+  labs(
+    title = "Sepal Width by Species", 
+    x = "Species", 
+    y = "Sepal Width") + 
   theme(legend.position = "none")
+```
+
+The `geom_boxplot()` is similar to the `geom_violin()`, a mirrored density plot displayed in the same way as a boxplot. Although they communicate the behavior of the data similarly and the boxplot shows median, IQR and outliers quite effectively, they can enrichen one another as the violin plot adds insight into the shape of the distribution.
+
+```{r}
+ggplot(iris, aes(x = Species, y = Sepal.Width)) +
+  geom_violin(
+    aes(fill = Species), 
+    color = "white", 
+    alpha = 0.6, 
+    width = 0.8) +
+  geom_boxplot(
+    aes(fill = Species), 
+    alpha = 1, 
+    width = 0.3) +
+  geom_jitter(
+    aes(color = Species),
+    size = 1,
+    alpha = 0.5,
+    width = 0.3) +
+  scale_fill_brewer(palette = "Pastel2") +
+  scale_color_brewer(palette = "Dark2") +
+  labs(
+    title = "Sepal Width by Species",
+    x = "Species",
+    y = "Sepal Width") + 
+  theme(legend.position = "none")
+```
+
+## Histograms and density plots
+
+Histograms visualize the distribution of a single variable, while density plots provide a smoothed version of the histogram. By layering them, we can see both the raw counts and the underlying distribution shape of the data.
+
+Let's layer them and see what happens.
+
+```{r}
+ggplot(iris, aes(x = Petal.Length, fill = Species)) +
+  geom_histogram(
+    color = "white", 
+    alpha = 0.5, 
+    position = "identity", 
+    bins = 40) +
+  geom_density(
+    aes(color = Species), 
+    size = 0.1, 
+    alpha = 0.5, 
+    show.legend = FALSE) +
+  scale_fill_brewer(palette = "Set1") +
+  scale_color_brewer(palette = "Pastel1") +
+  labs(
+    title = "Distribution of Petal Length",
+    x = "Petal Length",
+    y = "Density"
+  )
+```
+
+Currently, the density plot is not informative in relation to the histogram. Why?
+
+The y axis of a histogram is the count of observations in each bin, while the y axis of a density plot is the estimated density of observations. To layer a histogram with a density plot, we need to ensure that both plots are on the same scale. We can do that by specifying the `..density..` aesthetic in the histogram geom.
+
+```{r}
+ggplot(iris, aes(x = Petal.Length, fill = Species)) +
+  geom_histogram(
+    aes(y = ..density..), 
+    color = "white", 
+    alpha = 0.5, 
+    position = "identity", 
+    bins = 40) +
+  geom_density(
+    aes(color = Species), 
+    size = 0.1, 
+    alpha = 0.4, 
+    show.legend = FALSE) +
+  scale_fill_brewer(palette = "Set1") +
+  scale_color_brewer(palette = "Pastel1") +
+  labs(
+    title = "Distribution of Petal Length",
+    x = "Petal Length",
+    y = "Density"
+  )
+```
+
+## Faceting
+
+Sometimes layering can look quite messy, and this is where `facet_wrap()` comes in handy. It allows to fragment a plot based on a variable, which can help to visualize the data better.
+
+As `iris` does not call for faceting, we will use the `diamonds` dataset.
+
+In the following plot, we visualize the distribution of diamond prices by cut quality. However, because there is a lot of overlap between the density curves, the plot is not as informative as we would like it to be.
+
+```{r}
+ggplot(diamonds, aes(x = price, fill = cut)) +
+  geom_density(alpha = 0.5, color = NA) +
+  scale_fill_brewer(palette = "Set2") +
+  labs(
+    title = "Distribution of Diamond Prices by Cut Quality",
+    x = "Price",
+    y = "Density",
+    fill = "Cut Quality"
+  ) +
+  scale_fill_brewer(palette = "Dark2") 
+```
+
+To improve the visualization, we use `facet_wrap()` to create separate plots for each cut quality.
+
+```{r}
+ggplot(diamonds, aes(x = price, fill = cut)) +
+  geom_density(alpha = 1, color = NA, show.legend = FALSE) +
+  facet_wrap(~ cut) +
+  scale_fill_brewer(palette = "Set2") +
+  labs(
+    title = "Distribution of Diamond Prices by Cut Quality",
+    x = "Price",
+    y = "Density"
+  ) +
+  scale_fill_brewer(palette = "Dark2") +
+  theme_bw() + 
+  # Get rid of the y axis values
+  theme(axis.text.y = element_blank(), axis.ticks.y = element_blank())
+```
+
+# Advanced Geoms
+
+`ggplot2` offers a variety of advanced geoms that can be used to create more complex visualizations. A complex visualization may encompass more than two plotted variables.
+
+In this section, we will explore some of these geoms, including heatmaps, ribbon plots, and error bars.
+
+## Heatmaps
+
+Heatmaps are useful for visualizing the relationship between two categorical variables and a continuous variable. They can be used to show the average value of a continuous variable for each combination of the two categorical variables.
+
+Using the diamonds data, we will investigate the average price of diamonds based on their cut and color. Cut refers to the quality of a diamond's cut, while colors range from D (best) to J (worst).
+
+It is interesting to note that, in the following plot, the ideal cut with the best color (D) has the lowest average price - which is quite strange on an intuitive level.
+
+```{r}
+# Summarize average price
+diamonds_avg_price <- 
+  diamonds |> 
+  group_by(cut, color) |> 
+  summarize(avg_price = mean(price))
+
+# Plot the heat map
+ggplot(diamonds_avg_price, 
+       aes(x = cut, y = color, fill = avg_price)) +
+  geom_tile(color = "white") +
+  scale_fill_distiller(
+    name = "Average Price", 
+    palette = 3, 
+    direction = 1 # Inverts the default palette so that the color gradient is light < dark for the mean price
+    ) +
+  labs(
+    title = "Average Diamond Price by Cut and Color",
+    x = "Cut",
+    y = "Color"
+  )
+```
+
+## Ribbon plots
+
+A ribbon plot is a type of data visualization that shows a range (band) around a central line over a continuous x-axis. It's often used to visualize uncertainty, variability, or confidence intervals. It is also useful for time series visualizations.
+
+Because the raw `diamonds` data is not suitable for a ribbon plot unless it undergoes summarizing or smoothing, for this example we will use the `economics` dataset, which contains economic data in time from the US. The `psavert` variable represents the personal savings rate in the US over time.
+
+The following code block creates a ribbon and line plot that shows the personal savings rate in the US over time, with a range of ±1.5% around the mean savings rate.
+
+```{r}
+data(economics)
+
+ggplot(economics, aes(x = date)) +
+  geom_ribbon(aes(ymin = psavert - 1.5, ymax = psavert + 1.5), fill = "lightblue", alpha = 0.7) +
+  geom_line(aes(y = psavert), color = "steelblue", size = 0.5) +
+  labs(
+    title = "Personal Savings Rate in Time (USA)",
+    x = "Year",
+    y = "Personal Savings Rate (%)"
+  )
+```
+
+## Error bars
+
+Error bars are used to represent the variability of data and can be added to bar plots or line plots to show the uncertainty or variability in the data. They can be used to visualize confidence intervals, standard deviations, or standard errors.
+
+In order to plot an error bar, we first need to summarize the data. We do so by grouping the data by color and cut (the categorical variables) and calculating the mean and standard error of the price (the continuous variable).
+
+```{r}
+diamonds_summary <- 
+  diamonds |> 
+  group_by(color, cut) |> 
+  summarize(
+    mean_price = mean(price),
+    se_price = sd(price) / sqrt(n()))
+```
+
+Here is an example of `geom_errorbar()` paired with `geom_col()`. Before the `ggplot` pipeline, there is an additional arbitrary filter that selects only three colors for a simpler visualization.
+
+```{r}
+# Plot with error bars
+diamonds_summary |> 
+  filter(color %in% c("D", "G", "J")) |>
+  ggplot(aes(x = color, y = mean_price, fill = cut)) +
+    geom_col(position = position_dodge(0.9), width = 0.8) +
+    geom_errorbar(
+      aes(ymin = mean_price - se_price, ymax = mean_price + se_price),
+      size = 0.5,
+      position = position_dodge(0.9),
+      width = 0.5,
+      color = "red3"
+    ) +
+    scale_fill_viridis_d(option = "E") +
+    labs(
+      title = "Mean Diamond Price by Color and Cut",
+      x = "Color Grade",
+      y = "Average Price",
+      fill = "Cut"
+    ) 
+```
+
+Here is an example of `geom_errorbar()` paired with `geom_line()`.
+
+```{r}
+ggplot(diamonds_summary, 
+       aes(x = color, y = mean_price, group = cut, color = cut)) +
+  geom_line(
+    alpha = 0.5, 
+    linewidth = 0.8, 
+    position = position_dodge(0.3), 
+    show.legend = FALSE) +
+  geom_point(
+    size = 0.8, 
+    alpha = 0.8, 
+    position = position_dodge(0.3), 
+    show.legend = FALSE) +
+  geom_errorbar(
+    aes(ymin = mean_price - se_price, ymax = mean_price + se_price),
+    alpha = 0.9,
+    width = 0.8,
+    position = position_dodge(0.3)
+  ) +
+  scale_color_viridis_d(option = "D") +
+  labs(
+    title = "Mean Diamond Price by Color",
+    x = "Color",
+    y = "Average Price",
+    color = "Cut Quality"
+  )
+```
+
+# Coordinate scales and zooming
+
+The `coord_...` functions in `ggplot2` allow to change the coordinate system of a plot. The most common coordinate systems are Cartesian (`coord_cartesian()`) and polar (`coord_polar()`).
+
+`coord_cartesian()` can be an especially useful function to zoom into a plot, as it allows to specify the limits of the x and y axes without changing the data, unlike the `scale_...` functions do. In fact, `coord_...` functions do not interfere with the statistics of the data, but only affect the visual appearance of the plot. This means that the data is not filtered or modified in any way, and all data points are still included in the plot, even if they are not visible within the specified limits.
+
+To zoom into a plot, you have to specify the limits of the x and y axes inside `coord_cartesian()`.
+
+In the following plot, we will plot carats against price with different colors indicating different clarity categories.
+
+```{r}
+ggplot(diamonds, aes(x = carat, y = price)) +
+  geom_point(
+    aes(color = clarity),
+    size = 0.7,
+    alpha = 0.5,
+    position = "jitter") +
+  scale_color_viridis_d(option = "H")
+```
+
+What if we decide to zoom in to the area where the carat weight is between 0.5 and 2.5 and the price is between 1000 and 20000?
+
+```{r}
+ggplot(diamonds, aes(x = carat, y = price)) +
+  geom_point(
+    aes(color = clarity),
+    size = 0.7,
+    alpha = 0.5,
+    position = "jitter") +
+  scale_color_viridis_d(option = "H") +
+  coord_cartesian(
+    xlim = c(0.2, 0.5), 
+    ylim = c(0, 2000))
+```
+
+Another useful function is `coord_flip()`, which flips the x and y axes of a plot.
+
+The `geom_polar()` function can also be used to create circular plots and pie charts starting from bar plots.
+
+```{r}
+ggplot(diamonds, aes(x = color)) +
+  geom_bar(fill = "maroon", alpha = 0.7) +
+  labs(
+    title = "Count of Diamonds by Cut Quality",
+    x = "Cut",
+    y = "Number of Diamonds"
+  ) +
+  coord_polar()
 ```
 
 # Saving plots
 
-The `ggsave` allows you to save plots generated with R code. You can specify an existing ggplot object as the first argument, but by default `ggsave()` saves the last plot displayed in your Plots panel. You always need to specify the file path of the saved plot, including the preferred file format (e.g. .png, .jpg, .pdf). Plot size can be adjusted with the scale argument or by specifying the height and width in your preferred units (inches are the default unit).
+The `ggsave()` function allows you to save plots generated with R code. You can specify an existing ggplot object as the first argument, but by default `ggsave()` saves the last plot displayed in your Plots panel. You always need to specify the file path of the saved plot, including the preferred file format (eg. png, jpg, pdf). Plot size can be adjusted with the scale argument or by specifying the height and width in your preferred units (inches are the default unit).
 
 ```{r}
-# Save last plot
+# Save the last generated plot
 ggsave("figures/plot1.png", scale = 1.5)
 
-p <- ggplot(iris, aes(x = Species, y = Petal.Length, fill = Species)) + 
+# Save a plot saved to the Environment
+plot <- 
+  ggplot(iris, aes(x = Species, y = Petal.Length, fill = Species)) +
   geom_boxplot(width = 0.4) +
   scale_fill_brewer(palette = "PuOr") +
-  xlab("") +
-  ylab("Petal length") +
+  labs(y = "Petal length") +
   theme(legend.position = "none")
 
-# Save a plot saved to the Environment
-ggsave("figures/plot2.png", p, height = 10, width = 15, units = "cm")
+ggsave("figures/plot2.png", plot, height = 10, width = 15, units = "cm")
 ```
