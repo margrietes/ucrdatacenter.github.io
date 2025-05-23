@@ -22,6 +22,8 @@ This tutorial will cover some more advanced data visualization techniques using 
 -   Coordinate scales and zooming
 -   Saving ggplots
 
+If you do not yet feel comfortable with data visualization using `ggplot2`, check out [this tutorial](https://ucrdatacenter.github.io/tutorials/r_ggplot_intro/) first.
+
 We will mostly use `iris`, a simple dataset from the `datasets` package, and `diamonds`, a slightly more complex `ggplot2` dataset.
 
 ```{r}
@@ -93,6 +95,8 @@ ggplot(iris,
   scale_color_brewer(palette = "Oranges") # RColorBrewer offers a variety of color palettes, a list of which can be found in its documentation
 ```
 
+## Labs
+
 To complete the plot, let's add a title and subtitle. Let's also clean the legend a bit by changing the name of the variable and the labels.
 
 ```{r}
@@ -114,13 +118,13 @@ ggplot(iris,
     labels = c("Setosa", "Versicolor", "Virginica"))
 ```
 
-# Plot Layering
+# Plot layering
 
 As long as geoms exercise compatible behavior, we can add as many layers as we want to a plot. In this section we will explore some common geom combinations.
 
 It is important to note that geoms are plotted in the order of the ggplot pipeline, so the first geom will be plotted first, and the last one will be plotted on top of all the others.
 
-## Line and rug plots
+## Scatter, line and rug plots
 
 Let's add a line plot to the scatter plot that was made previously. However, if we simply add a `geom_smooth()` to the existing workflow, we get the following result.
 
@@ -178,7 +182,7 @@ ggplot(iris) +
   geom_rug(
     aes(x = Petal.Length, y = Petal.Width, color = Species),
     size = 0.5,
-    position = "jitter",    # Match jitter with points
+    position = "jitter",    # Match the jitter with geom_point points
     sides = "bl",           # Rugs on bottom "b" and left "l"
     show.legend = FALSE  # This ensures that the legend only shows the square points of geom_point()
   ) +
@@ -290,7 +294,7 @@ ggplot(iris, aes(x = Petal.Length, fill = Species)) +
   )
 ```
 
-## Faceting
+# Faceting
 
 Sometimes layering can look quite messy, and this is where `facet_wrap()` comes in handy. It allows to fragment a plot based on a variable, which can help to visualize the data better.
 
@@ -331,7 +335,7 @@ ggplot(diamonds, aes(x = price, fill = cut)) +
 
 # Advanced Geoms
 
-`ggplot2` offers a variety of advanced geoms that can be used to create more complex visualizations. A complex visualization may encompass more than two plotted variables.
+`ggplot2` offers a variety of advanced geoms that can be used to create more complex visualizations. A complex visualization may encompass more than two plotted variables, or additional statistical computations to plug into the plot.
 
 In this section, we will explore some of these geoms, including heatmaps, ribbon plots, and error bars.
 
